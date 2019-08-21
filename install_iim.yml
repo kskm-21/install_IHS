@@ -1,0 +1,29 @@
+- name: Check if IIM is installed
+  stat:
+    path: "/home/{{svc_user }}/etc/.ibm/InstallationManager.dat"
+  register: iim_dat
+- name: Check if the IIM installation files avaialble in repo
+  stat:
+    path: "{{ repo_loc }}/installc"
+  register: installc_stat
+  when: iim_dat.stat.exists == False
+- name: Get IIM installation binaries from repository
+  get_url:
+    url: "http://n01awl901/repository/IIM_1.8.2.zip"
+    dest: "{{ repo_loc }}/"
+    mode: '0755'
+  when: installc_stat.exists == False
+- name: Expand IIM archive.
+  unarchive:
+    src: "{{ repo_loc }}/IIM_1.8.2.zip"
+    dest: "{{ repo_loc }}/"
+    creates: "{{ repo_loc }}/IIM_1.8.2"
+  when: installc_stat.stat.exists == False
+- name: copy the custom install file in IIM binaries dir
+  copy:
+    src: /home/xgzpqkon/playbooks/install.xml
+    dest: "{{ repo_loc }}/IIM_1.8.2/install.xml"
+  when: iim_dat.stat.exists == False
+- name: Install Installation Manager v1.8.2
+  shell: "{{ repo_loc }}/IIM_1.8.2/userinstc -acceptLicense"
+  when: iim_dat.stat.exists == False
